@@ -4,6 +4,7 @@ data/
 images/
 test/result/
 training/*.tar
+ckpts/*.tar
 imgs/
 cocoapi/
 exp/
