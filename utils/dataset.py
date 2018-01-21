@@ -11,25 +11,22 @@ from PIL import Image
 import cv2
 import transforms
 
-def read_data_file(file_dir):
-
-    lists = []
-    with open(file_dir, 'r') as fp:
+def read_openpose_list(file_pth):
+    _list = []
+    with open(file_pth, 'r') as fp:
         line = fp.readline()
         while line:
-            path = line.strip()
-            lists.append(path)
+            _list.append(line.strip())
             line = fp.readline()
+    return _list
 
-    return lists
 
-def read_json_file(file_dir):
+def read_openpose_json(file_pth):
     """
         filename: JSON file
-
         return: two list: key_points list and centers list
     """
-    fp = open(file_dir)
+    fp = open(file_pth)
     data = json.load(fp)
     kpts = []
     centers = []
@@ -41,9 +38,9 @@ def read_json_file(file_dir):
         scale = []
         lists = info['info']
         for x in lists:
-           kpt.append(x['keypoints'])
-           center.append(x['pos'])
-           scale.append(x['scale'])
+            kpt.append(x['keypoints'])
+            center.append(x['pos'])
+            scale.append(x['scale'])
         kpts.append(kpt)
         centers.append(center)
         scales.append(scale)
@@ -117,25 +114,36 @@ def generate_vector(vector, cnt, kpts, vec_pair, stride, theta):
 
     return vector
 
-class CocoFolder(data.Dataset):
+class CocoOpenposeData(data.Dataset):
 
-    def __init__(self, file_dir, stride, transformer=None):
-
-        self.img_list = read_data_file(file_dir[0])
-        self.mask_list = read_data_file(file_dir[1])
-        self.kpt_list, self.center_list, self.scale_list = read_json_file(file_dir[2])
-        self.stride = stride
+    def __init__(self, cfg, data_root, info_root, image_set, transformer=None, max_sample=-1):
+        self.data_root = data_root
+        self.info_root = info_root
+        self.image_set = image_set
+        self.img_list = read_openpose_list(os.path.join(info_root, '{}_pose.txt'.format(image_set)))
+        self.mask_list = read_openpose_list(os.path.join(info_root, '{}_pose_mask.txt'.format(image_set)))
+        self.kpt_list, self.center_list, self.scale_list = read_openpose_json(os.path.join(info_root, '{}_pose.json'.format(image_set)))
         self.transformer = transformer
         self.vec_pair = [[2,3,5,6,8,9, 11,12,0,1,1, 1,1,2, 5, 0, 0, 14,15],
                          [3,4,6,7,9,10,12,13,1,8,11,2,5,16,17,14,15,16,17]] # different from openpose
-        self.theta = 1.0
-        self.sigma = 7.0
+        self.pixel_mean = cfg.pixel_mean
+        self.pixel_std = cfg.pixel_std
+        self.stride = cfg.OPOSE.stride
+        self.theta = cfg.OPOSE.theta
+        self.sigma = cfg.OPOSE.sigma
+
+        if 0 < max_sample <= len(self.img_list):
+            self.img_list = self.img_list[0:max_sample]
+        num_sample = len(self.img_list)
+        assert num_sample > 0
+        print('# samples: {}'.format(num_sample))
+
 
     def __getitem__(self, index):
 
-        img_path = self.img_list[index]
+        img_path = os.path.join(self.data_root, self.image_set, self.img_list[index])
         img = np.array(cv2.imread(img_path), dtype=np.float32)
-        mask_path = self.mask_list[index]
+        mask_path = os.path.join(self.info_root, 'pose_mask', self.img_list[index].replace('.jpg', '.npy'))
         mask = np.load(mask_path)
         mask = np.array(mask, dtype=np.float32)
 
@@ -168,5 +176,4 @@ class CocoFolder(data.Dataset):
         return img, heatmap, vecmap, mask
 
     def __len__(self):
-
         return len(self.img_list)

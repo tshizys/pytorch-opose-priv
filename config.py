@@ -104,14 +104,14 @@ __C.OPOSE.stride = 8
 __C.OPOSE.theta = 1.0
 __C.OPOSE.sigma = 7.0
 __C.OPOSE.data_root = '/mnt/lvmhdd/MSCOCO2017'
-__C.OPOSE.info_root = '/home/xiaojie/workspace/pose/pytorch-priv-pose/data/mscoco_pose'
+__C.OPOSE.info_root = '/home/xiaojie/workspace/pose/Pytorch_Realtime_Multi-Person_Pose_Estimation/data/'
 __C.OPOSE.fc_dim = 512  # fc_dim
 __C.OPOSE.planes = 128  # fc_dim
-__C.OPOSE.batch_size_per_gpu = 8  # input batch size of each gpu
+__C.OPOSE.batch_size_per_gpu = 10  # input batch size of each gpu
 __C.OPOSE.epochs = 100  # number of total epochs to run
 __C.OPOSE.base_lr = 0.00004  # encoder base learning rate
 __C.OPOSE.lr_schedule = [30, 60]  # decrease learning rate at these epochs
-
+__C.OPOSE.gamma = 0.333  # base_lr is multiplied by gamma on lr_schedule
 __C.OPOSE.momentum = 0.9  # momentum
 __C.OPOSE.weight_decay = 5e-4  # weight_decay
 __C.OPOSE.fix_bn = False  # fix bn params
@@ -121,8 +121,7 @@ __C.OPOSE.input_size = 368  # input image size
 __C.OPOSE.rotation = []  # list, randomly rotate the image by angle, etc. [-10, 10]
 __C.OPOSE.disp_iter = 20  # display iteration
 __C.OPOSE.ckpt = 'ckpts'  # path to save checkpoint
-__C.OPOSE.resume_encoder = ''  # path to latest net_encoder checkpoint
-__C.OPOSE.resume_decoder = ''  # path to latest net_decoder checkpoint
+__C.OPOSE.resume = ''  # path to latest net checkpoint
 __C.OPOSE.start_epoch = 0  # manual epoch number (useful on resume)
 __C.OPOSE.validate = True  # validate
 __C.OPOSE.evaluate = False  # evaluate
@@ -130,17 +129,9 @@ __C.OPOSE.visualize = False  # visualize
 
 __C.OPOSE.workers= 6
 __C.OPOSE.display= 10
-__C.OPOSE.max_iter= 160000 #60 epoch
-__C.OPOSE.batch_size= 20
-__C.OPOSE.test_interval= 3000
-__C.OPOSE.topk= 3
-__C.OPOSE.start_iters= 0
-__C.OPOSE.best_model= 12345678.9
-  #-------------lr_policy--------------------#
-  # step
-__C.OPOSE.lr_policy = 'step'
-__C.OPOSE.step_size =  50000
-__C.OPOSE.gamma = 0.333  # base_lr is multiplied by gamma on lr_schedule
+__C.OPOSE.best_loss= 12345678.9
+
+
             
 
 
