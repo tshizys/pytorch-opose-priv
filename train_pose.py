@@ -15,18 +15,6 @@ from config import cfg, cfg_from_file, cfg_from_list
 from models.openpose import pose_estimation
 
 parser = argparse.ArgumentParser(description='PyTorch Model Training')
-parser.add_argument('--gpu', default=[0,1], nargs='+', type=int,
-                    dest='gpu', help='the gpu used')
-parser.add_argument('--pretrained', default=None,type=str,
-                    dest='pretrained', help='the path of pretrained model')
-parser.add_argument('--root', default=None, type=str,
-                    dest='root', help='the root of images')
-parser.add_argument('--train_dir', nargs='+', type=str,
-                    dest='train_dir', help='the path of train file')
-parser.add_argument('--val_dir', default=None, nargs='+', type=str,
-                    dest='val_dir', help='the path of val file')
-parser.add_argument('--num_classes', default=1000, type=int,
-                    dest='num_classes', help='num_classes (default: 1000)')
 parser.add_argument('--cfg', dest='cfg_file',
                     help='optional cfg.OPOSE file',
                     default='./cfgs/opose/vgg19s8_cpm6s.yml', type=str)
@@ -45,9 +33,8 @@ print(cfg.OPOSE)
 # Use CUDA
 gpu = []
 os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpu_ids
-print cfg.gpu_ids.split(',')
-gpu.append(i for i in cfg.gpu_ids.split(','))
-print gpu
+for i in cfg.gpu_ids.split(','):
+    gpu.append(int(i))
 USE_CUDA = torch.cuda.is_available()
 # Random seed
 if cfg.rng_seed is None:
@@ -142,10 +129,10 @@ def train(trainloader, model, criterion, optimizer, epoch, use_cuda=True):
         heatmap = heatmap.cuda(async=True)
         vecmap = vecmap.cuda(async=True)
         mask = mask.cuda(async=True)
-        input_var = torch.autograd.Variable(input) #1x3x48x48
-        heatmap_var = torch.autograd.Variable(heatmap) #1x19x46x46
-        vecmap_var = torch.autograd.Variable(vecmap) #1x38x46x46
-        mask_var = torch.autograd.Variable(mask) #1x1x46x46
+        input_var = torch.autograd.Variable(input) #20x3x48x48
+        heatmap_var = torch.autograd.Variable(heatmap) #20x19x46x46
+        vecmap_var = torch.autograd.Variable(vecmap) #20x38x46x46
+        mask_var = torch.autograd.Variable(mask) #20x1x46x46
         # print input_var.size(),heatmap_var.size(),vecmap_var.size(),mask_var.size() 
         vec1, heat1, vec2, heat2, vec3, heat3, vec4, heat4, vec5, heat5, vec6, heat6 = model(input_var, mask_var)
         loss1_1 = criterion(vec1, vecmap_var) * VEC_LOSS_WEIGHT
@@ -168,28 +155,33 @@ def train(trainloader, model, criterion, optimizer, epoch, use_cuda=True):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
-        losses.update(loss.data[0], input.size(0))
-        batch_time.update(time.time() - end)
+
+        losses.update(loss.data[0], input.size(0)) 
+        batch_time.update(time.time() - end) # time of one batch
         end = time.time()
 
         if (batch_idx+1) % cfg.OPOSE.display == 0:
-
-            print('Train Iteration: {0}\t' 'Time {batch_time.sum:.3f}s / {1}iters, ({batch_time.avg:.3f})\t''Data load {data_time.sum:.3f}s / {1}iters, ({data_time.avg:3f})\n'
-                  'Learning rate = {2}\n'
-                  'Loss = {loss.val:.8f} (ave = {loss.avg:.8f})\n'.format(batch_idx+1, cfg.OPOSE.display, cfg.OPOSE.base_lr, batch_time=batch_time, data_time=data_time, loss=losses))
+            print('Epoch: [{}/{}][{}/{}] | Time: {:.2f}/{}iters | Data: {:.4f}/{}iters | LR: {:.6f} | Loss: {:.4f} (ave: {})| Total: {:.2f}'
+                  .format(epoch + 1, cfg.OPOSE.epochs, batch_idx + 1, len(trainloader), 
+                        batch_time.sum, cfg.OPOSE.display,
+                        data_time.sum, cfg.OPOSE.display,
+                        cfg.OPOSE.base_lr,
+                        losses.val, losses.avg,
+                        batch_time.sum + data_time.sum))
+            # print('Train Iteration: {0}\t' 'Time {batch_time.sum:.3f}s / {1}iters, ({batch_time.avg:.3f}s/iter)\t''Data load {data_time.sum:.3f}s / {1}iters, ({data_time.avg:3f}s/iter)\n'
+            #       'Learning rate = {2}\n'
+            #       'Loss = {loss.val:.8f} (ave = {loss.avg:.8f})\n'.format(batch_idx+1, cfg.OPOSE.display, cfg.OPOSE.base_lr, batch_time=batch_time, data_time=data_time, loss=losses))
             for cnt in range(0,12,2):
-                print('Loss{0}_1 = {loss1.val:.8f} (ave = {loss1.avg:.8f})\t'
-                    'Loss{1}_2 = {loss2.val:.8f} (ave = {loss2.avg:.8f})'.format(cnt / 2 + 1, cnt / 2 + 1, loss1=losses_list[cnt], loss2=losses_list[cnt + 1]))
+                print('Loss{0}_1 = {loss1.val:.4f} (ave = {loss1.avg:.4f})\t'
+                    'Loss{1}_2 = {loss2.val:.4f} (ave = {loss2.avg:.4f})'.format(cnt / 2 + 1, cnt / 2 + 1, loss1=losses_list[cnt], loss2=losses_list[cnt + 1]))
             print time.strftime('%Y-%m-%d %H:%M:%S -----------------------------------------------------------------------------------------------------------------\n', time.localtime())
-
             batch_time.reset()
             data_time.reset()
-            losses.reset()
-            for cnt in range(12):
-                losses_list[cnt].reset()
-    return losses.avg
-
+            # losses.reset()
+            # for cnt in range(12):
+            #     losses_list[cnt].reset()
+    return losses.avg   # average losses on the train dataset (per batch)
+ 
 def test(valloader, model, criterion, optimizer, epoch, use_cuda=True):
     model.eval()
     batch_time = AverageMeter()
@@ -226,23 +218,29 @@ def test(valloader, model, criterion, optimizer, epoch, use_cuda=True):
         losses.update(loss.data[0], input.size(0))
         for cnt, l in enumerate([loss1_1, loss1_2, loss2_1, loss2_2, loss3_1, loss3_2, loss4_1, loss4_2, loss5_1, loss5_2, loss6_1, loss6_2]):
             losses_list[cnt].update(l.data[0], input.size(0))
-    # measure elapsed time
-    batch_time.update(time.time() - end)
-    end = time.time()
-    print(
-        'Test Time {batch_time.sum:.3f}s, ({batch_time.avg:.3f})\t'
-        'Loss {loss.avg:.8f}\n'.format(
-        batch_time=batch_time, loss=losses))
-    for cnt in range(0,12,2):
-        print('Loss{0}_1 = {loss1.val:.8f} (ave = {loss1.avg:.8f})\t'
-            'Loss{1}_2 = {loss2.val:.8f} (ave = {loss2.avg:.8f})'.format(cnt / 2 + 1, cnt / 2 + 1, loss1=losses_list[cnt], loss2=losses_list[cnt + 1]))
-    print time.strftime('%Y-%m-%d %H:%M:%S -----------------------------------------------------------------------------------------------------------------\n', time.localtime())
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+        if (batch_idx+1) % cfg.OPOSE.display == 0:
+            print('Epoch: [{}/{}][{}/{}] | Time: {:.2f}/{}iters | Data: {:.4f}/{}iters | LR: {:.6f} | Loss: {:.4f} (ave: {})| Total: {:.2f}'
+                  .format(epoch + 1, cfg.OPOSE.epochs, batch_idx + 1, len(valloader), 
+                        batch_time.sum, cfg.OPOSE.display,
+                        data_time.sum, cfg.OPOSE.display,
+                        cfg.OPOSE.base_lr,
+                        losses.val, losses.avg,
+                        batch_time.sum + data_time.sum))
+            # print(
+            #     'Test Time {batch_time.sum:.3f}s, ({batch_time.avg:.3f})\t'
+            #     'Loss {loss.avg:.8f}\n'.format(
+            #     batch_time=batch_time, loss=losses))
+            for cnt in range(0,12,2):
+                print('Loss{0}_1 = {loss1.val:.8f} (ave = {loss1.avg:.8f})\t'
+                    'Loss{1}_2 = {loss2.val:.8f} (ave = {loss2.avg:.8f})'.format(cnt / 2 + 1, cnt / 2 + 1, loss1=losses_list[cnt], loss2=losses_list[cnt + 1]))
+            print time.strftime('%Y-%m-%d %H:%M:%S -----------------------------------------------------------------------------------------------------------------\n', time.localtime())
+            batch_time.reset()
+            data_time.reset()
 
-    batch_time.reset()
-    losses.reset()
-    for cnt in range(12):
-        losses_list[cnt].reset()
-    return losses.avg
+    return losses.avg  # average losses of the validation dataset(per batch) 
 
 
 def main():
@@ -277,7 +275,7 @@ def main():
                                                  num_workers=int(cfg.workers), pin_memory=True)
     # Load nets into gpu
     if NUM_GPUS > 1:
-        model = torch.nn.DataParallel(model, device_ids= args.gpu).cuda()
+        model = torch.nn.DataParallel(model, device_ids= gpu).cuda()
     # Set up optimizers
     params, multiple = get_parameters(model, cfg, False)
     

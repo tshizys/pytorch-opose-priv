@@ -22,7 +22,7 @@ OPOSE:
   num_limbs: 19
   input_size: 368
   rotation: [-40, 40]
-  disp_iter: 20
+  disp_iter: 10
   ckpt: './ckpts/coco_pose/vgg19s8_cpm6s'
   resume: '' #'./ckpts/coco_pose/vgg19s8_cpm6s/latest.pth.tar'
   start_epoch: 0
@@ -31,7 +31,6 @@ OPOSE:
   visualize: False
 
   workers: 6
-  display: 10
   best_loss: 12345678.9
 
 # exp
