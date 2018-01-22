@@ -1,7 +1,7 @@
 ## Pytorch Realtime Multi-Person Pose Estimation
 
 This is a pytroch version of Realtime Multi-Person Pose Estimation, origin code is 
-https://github.com/ZheC/Realtime_Multi-Person_Pose_Estimation
+https://github.com/ZheC/Realtime_Multi-Person_Pose_Estimation and 
 https://github.com/last-one/pytorch_realtime_multi-person_pose_estimation. 
 Thanks to ZheC and last-one for providing the codes.
 
