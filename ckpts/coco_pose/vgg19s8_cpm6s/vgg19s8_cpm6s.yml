@@ -1,0 +1,69 @@
+OPOSE:
+  arch_encoder: 'vgg19s8'
+  arch_decoder: 'cpm6s'
+  weights_encoder: './pytorch-model/vgg19-dcbb9e9d.pth'
+  weights_decoder: ''
+  stride: 8
+  theta: 1.0
+  sigma: 7.0
+  data_root: '/mnt/lvmhdd/MSCOCO2017/'
+  info_root: '/home/xiaojie/workspace/pose/Pytorch_Realtime_Multi-Person_Pose_Estimation/data/'
+  fc_dim: 512
+  planes: 128
+  batch_size_per_gpu: 10
+  epochs: 100
+  base_lr: 0.00004
+  lr_schedule: [20, 40, 60]
+  gamma: 0.333
+  momentum: 0.9
+  weight_decay: 0.0005
+  fix_bn: False
+  num_points: 19
+  num_limbs: 19
+  input_size: 368
+  rotation: [-40, 40]
+  disp_iter: 10
+  ckpt: './ckpts/coco_pose/vgg19s8_cpm6s'
+  resume: './ckpts/coco_pose/vgg19s8_cpm6s/latest.pth.tar'
+  start_epoch: 0
+  validate: True
+  evaluate: False
+  visualize: False
+
+  workers: 6
+  best_loss: 12345678.9
+
+# exp
+# lr_policy: 'exp'
+# policy_parameter:
+#   gamma: 0.99
+# 
+# inv
+# lr_policy: 'inv'
+# policy_parameter:
+#   gamma: 0.1
+#   power: 0.1
+# 
+# multistep
+#lr_policy: 'multistep'
+#policy_parameter:
+  #stepvalue: [20000, 35000, 45000]
+  #gamma: 0.1
+# 
+# poly
+#lr_policy: 'poly'
+#policy_parameter:
+  #power: 1.5
+  #max_iter: 250000
+# 
+# sigmoid
+# lr_policy: 'sigmoid'
+# policy_parameter:
+#   gamma: 0.9
+#   stepsize: 5000
+#lr_policy: 'multistep-poly'
+#policy_parameter:
+  #stepvalue: [12435, 24870, 37350, 49740]
+  #max_iter: 62175
+  #gamma: 0.333
+  #power: 1.2

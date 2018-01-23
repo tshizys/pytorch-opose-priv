@@ -1,0 +1,16 @@
+data/*
+caffe-model/*
+pytorch-model/*
+*.zip
+ckpts/*/*/*.tar
+ckpts/*.tar
+*.pyc
+*__pycache__*
+*.jpg
+*.png
+*.pkl
+*.txt
+*.json
+*.o*
+*~
+*.avi
